@@ -2,6 +2,7 @@
 #include <vector>
 #include <list>
 #include <utility>
+#include <memory>
 
 enum class EdgeColor {
     Black,

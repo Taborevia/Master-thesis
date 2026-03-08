@@ -1,5 +1,11 @@
 #include "GraphAM.hpp"
 #include <gtest/gtest.h>
+#include "FileReader.hpp"
+#include "MonteCarloTreeSearch_v1.hpp"
+
+#ifndef PROJECT_ROOT
+#define PROJECT_ROOT "."
+#endif
 
 struct GraphAMTest : public ::testing::Test {
 protected:
@@ -63,8 +69,29 @@ TEST_F(GraphAMTest, ContractVerticesUpdates) {
     g.contractVertices(0, 2);
     SUCCEED();
 }
+class MCTSv1Test : public ::testing::TestWithParam<std::string> {
+};
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+TEST_P(MCTSv1Test, FindSequence) {
+    std::string path = GetParam();
+    std::shared_ptr<IGraph> g = readGraphFromFile(path);
+        
+    MonteCarloTreeSearch_v1 mcts(g);
+    mcts.findSequence(300,3); // 1 second time limit
+
+    int twinWidth = mcts.getBestTwinWidth();
+    std::vector<std::pair<int,int>> sequence = mcts.getBestContractionSequence();
+
+    std::cout<<"Graph: "<<path<<", Twin-width: "<<twinWidth<<"\n";
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    MCTSTests,
+    MCTSv1Test,
+    ::testing::Values(
+        std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_002.gr",
+        std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_004.gr",
+        std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_006.gr"
+    )
+);
+

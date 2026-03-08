@@ -5,6 +5,7 @@
 #include <utility>
 #include <GraphAL.hpp>
 #include <memory>
+#include <ITwinWidthSolver.hpp>
 
 std::vector<std::pair<int,int>> generateRandomSequence(std::vector<int> vertices, unsigned int seed = 42);
 
@@ -19,20 +20,20 @@ struct Node {
     Node(std::pair<int,int> contraction, std::weak_ptr<Node> parent) : contraction_(contraction), parent_(parent) {}
 };
 
-class MonteCarloTreeSearch{
+class MonteCarloTreeSearch_v1 : public ITwinWidthSolver {
 
 public:
-    MonteCarloTreeSearch(std::shared_ptr<IGraph> graph);
+    MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph);
     std::vector<std::pair<int,int>> possibleContractions(std::set<int> vertices);
-    void findSequence(float resources, float c_parameter);
+    void findSequence(float resources, float c_parameter) override;
     
     std::shared_ptr<Node> expand(std::shared_ptr<Node> state, std::set<int>& vertices);
     std::shared_ptr<Node> bestChild(std::shared_ptr<Node> state, float c);
     std::tuple<std::shared_ptr<Node>,std::vector<std::pair<int,int>>,std::set<int>> treePolicy(std::shared_ptr<Node> state, float c, std::set<int>& vertices, std::vector<std::pair<int,int>>& contractionSequence);
     void backPropagation(std::shared_ptr<Node> state, float reward);
     std::pair<int,std::vector<std::pair<int,int>>> defaultPolicy(std::vector<std::pair<int,int>> contractionSequence, std::shared_ptr<IGraph> graph, std::set<int> vertices);
-    int getBestTwinWidth() const;
-    std::vector<std::pair<int,int>> getBestContractionSequence() const;
+    int getBestTwinWidth() const override;
+    std::vector<std::pair<int,int>> getBestContractionSequence() const override;
 
 private:
     std::shared_ptr<IGraph> graph_;

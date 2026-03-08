@@ -11,6 +11,8 @@ public:
     void print() const override;
     void contractVertices(int u, int v) override;
     int contractGraph(std::vector<std::pair<int,int>>) override;
+    int getNumberOfVertices() const override;
+    std::unique_ptr<IGraph> clone() const override;
     int getMaxRedDegree() const;
 
 private:

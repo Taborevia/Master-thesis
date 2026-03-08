@@ -1,6 +1,7 @@
 #include "GraphAM.hpp"
 #include <iostream>
 #include <iomanip>
+#include <memory>
 
 GraphAM::GraphAM(int vertices)
     : vertices_(vertices), maxRedDegree_(0), adjMatrix_(vertices, std::vector<int>(vertices, 0)), redDegrees_(vertices,0) {}
@@ -66,9 +67,22 @@ void GraphAM::contractVertices(int u, int v) {
 int GraphAM::contractGraph(std::vector<std::pair<int,int>> contractionSequnce){
     for (const auto& contraction : contractionSequnce){
         contractVertices(contraction.first, contraction.second);
-    } 
+    }
+    return maxRedDegree_;
 }
 
 int GraphAM::getMaxRedDegree() const{
     return maxRedDegree_;
 };
+
+int GraphAM::getNumberOfVertices() const {
+    return vertices_;
+}
+
+std::unique_ptr<IGraph> GraphAM::clone() const {
+    auto copy = std::make_unique<GraphAM>(vertices_);
+    copy->maxRedDegree_ = maxRedDegree_;
+    copy->adjMatrix_ = adjMatrix_;
+    copy->redDegrees_ = redDegrees_;
+    return copy;
+}
