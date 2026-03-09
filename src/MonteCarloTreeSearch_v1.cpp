@@ -113,7 +113,7 @@ void MonteCarloTreeSearch_v1::findSequence(float resources, float c_parameter){
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
     int n = graph_->getNumberOfVertices();
-        std::set<int> vertices;
+    std::set<int> vertices;
     for (int i =0;i<n;i++)
         vertices.insert(i);
     root_->possibleContractions_ = possibleContractions(vertices);

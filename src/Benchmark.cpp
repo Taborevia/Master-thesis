@@ -193,11 +193,6 @@ BenchmarkResult Benchmark::processGraph(
             std::cout << " -> Twin Width: " << result.actualTwinWidth;
             if (result.expectedTwinWidth != -1) {
                 std::cout << " (expected: " << result.expectedTwinWidth << ")";
-                if (result.passed) {
-                    std::cout << " ✓";
-                } else {
-                    std::cout << " ✗";
-                }
             }
             std::cout << " (" << std::fixed << std::setprecision(2) 
                       << result.executionTime << " ms)" << std::endl;
@@ -322,33 +317,31 @@ void Benchmark::printSummary(const std::vector<BenchmarkResult>& results) const 
         std::cout << " (" << std::fixed << std::setprecision(1) 
                   << (errorTests * 100.0 / totalTests) << "%)";
     }
-    std::cout << std::endl;
-    std::cout << "Average percentage difference: " << std::fixed << std::setprecision(2) << avgPercentDiff << "%" << std::endl;
-    std::cout << "Min difference: " << std::fixed << std::setprecision(0) << minDiff << std::endl;
-    std::cout << "Max difference: " << std::fixed << std::setprecision(0) << maxDiff << std::endl;
-    std::cout << "Min percentage difference: " << std::fixed << std::setprecision(2) << minPercentDiff << "%" << std::endl;
-    std::cout << "Max percentage difference: " << std::fixed << std::setprecision(2) << maxPercentDiff << "%";
     if (diffCount > 0) {
+        std::cout << std::endl;
+        std::cout << "Average percentage difference: " << std::fixed << std::setprecision(2) << avgPercentDiff << "%" << std::endl;
+        std::cout << "Min percentage difference: " << std::fixed << std::setprecision(2) << minPercentDiff << "%" << std::endl;
+        std::cout << "Max percentage difference: " << std::fixed << std::setprecision(2) << maxPercentDiff << "%";
         std::cout << "\n--- Twin Width Difference Statistics ---" << std::endl;
         std::cout << "Average difference: " << std::fixed << std::setprecision(2) << avgDiff << std::endl;
         std::cout << "Min difference: " << std::fixed << std::setprecision(0) << minDiff << std::endl;
         std::cout << "Max difference: " << std::fixed << std::setprecision(0) << maxDiff << std::endl;
     }
     
-    // Timing statistics
-    if (!executionTimes.empty()) {
-        std::cout << "\n--- Execution Time Statistics ---" << std::endl;
-        std::cout << "Total time: " << std::fixed << std::setprecision(2) 
-                  << totalTime << " ms" << std::endl;
-        std::cout << "Average time per test: " << std::fixed << std::setprecision(2) 
-                  << avgTime << " ms" << std::endl;
-        std::cout << "Median time per test: " << std::fixed << std::setprecision(2) 
-                  << medianTime << " ms" << std::endl;
-        std::cout << "Min time: " << std::fixed << std::setprecision(2) 
-                  << minTime << " ms" << std::endl;
-        std::cout << "Max time: " << std::fixed << std::setprecision(2) 
-                  << maxTime << " ms" << std::endl;
-    }
+    // // Timing statistics
+    // if (!executionTimes.empty()) {
+    //     std::cout << "\n--- Execution Time Statistics ---" << std::endl;
+    //     std::cout << "Total time: " << std::fixed << std::setprecision(2) 
+    //               << totalTime << " ms" << std::endl;
+    //     std::cout << "Average time per test: " << std::fixed << std::setprecision(2) 
+    //               << avgTime << " ms" << std::endl;
+    //     std::cout << "Median time per test: " << std::fixed << std::setprecision(2) 
+    //               << medianTime << " ms" << std::endl;
+    //     std::cout << "Min time: " << std::fixed << std::setprecision(2) 
+    //               << minTime << " ms" << std::endl;
+    //     std::cout << "Max time: " << std::fixed << std::setprecision(2) 
+    //               << maxTime << " ms" << std::endl;
+    // }
     
     std::cout << "======================================" << std::endl;
 }
