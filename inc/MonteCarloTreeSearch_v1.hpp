@@ -40,4 +40,9 @@ private:
     std::shared_ptr<Node> root_;
     std::vector<std::pair<int,int>> bestSequence_;
     int bestTwinWidth_;
+    std::vector<std::pair<int,int>> currentSequence_;    
+    int currentTwinWidth_;
+
+    std::shared_ptr<Node> bestContraction();
+    void makeContraction(float resources, float c_parameter);
 };

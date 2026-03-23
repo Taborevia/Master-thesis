@@ -16,7 +16,7 @@ int main() {
     // benchmark.saveResults(exactResults, "results/exact_public_benchmark.csv");
     
     // Testuj small data
-    auto smallResults = benchmark.testSmallData(1, 3, 10);
+    auto smallResults = benchmark.testSmallData(60, 3, 10);
     benchmark.printSummary(smallResults);
     benchmark.saveResults(smallResults, "results/small_data_benchmark.csv");
     

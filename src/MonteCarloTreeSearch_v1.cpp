@@ -86,7 +86,7 @@ std::tuple<std::shared_ptr<Node>,std::vector<std::pair<int,int>>,std::set<int>> 
         auto child = bestChild(state,c);
         vertices.erase(child->contraction_.second);
         contractionSequence.push_back(child->contraction_);
-        return treePolicy(bestChild(state,c),c,vertices,contractionSequence);
+        return treePolicy(child,c,vertices,contractionSequence);
     }
 }
 
@@ -108,7 +108,31 @@ void MonteCarloTreeSearch_v1::backPropagation(std::shared_ptr<Node> state, float
     }
 }
 
-void MonteCarloTreeSearch_v1::findSequence(float resources, float c_parameter){
+std::shared_ptr<Node> MonteCarloTreeSearch_v1::bestContraction(){
+    auto current = root_;
+    int mostVisitedChild = INT_MIN;
+    std::shared_ptr<Node> bestChild = nullptr;
+    
+    std::cout << "\n=== Stan wszystkich dzieci ===" << std::endl;
+    for (auto& child : current->children_){
+        float avgValue = (child->visits_ > 0) ? (float)child->value_ / child->visits_ : 0.0f;
+        std::cout << "Kontrakcja: (" << child->contraction_.first << ", " 
+                  << child->contraction_.second << ") | "
+                  << "Wizyty: " << child->visits_ << " | "
+                  << "Wartość: " << child->value_ << " | "
+                  << "Średnia: " << avgValue << std::endl;
+        
+        if (child->visits_ > mostVisitedChild){
+            mostVisitedChild = child->visits_;
+            bestChild = child;
+        }
+    }
+    std::cout << "============================\n" << std::endl;
+    
+    return bestChild;
+}
+
+void MonteCarloTreeSearch_v1::makeContraction(float resources, float c_parameter){
     auto start = std::chrono::high_resolution_clock::now();
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
@@ -135,6 +159,21 @@ void MonteCarloTreeSearch_v1::findSequence(float resources, float c_parameter){
         end = std::chrono::high_resolution_clock::now();
         duration = end - start;
     }
+    auto best = bestContraction();
+    std::cout<<"Best contraction: "<<best->contraction_.first<<" with "<<best->contraction_.second<<"\n";
+    root_ = best;
+    currentSequence_.push_back(best->contraction_);
+    graph_->contractVertices(best->contraction_.first,best->contraction_.second);
+    currentTwinWidth_ = graph_->getMaxRedDegree();
+}
+
+void MonteCarloTreeSearch_v1::findSequence(float resources, float c_parameter){
+    int n = graph_->getNumberOfVertices();
+    float timeLimitForContraction = resources / (n - 1);
+    for (int i = 0; i < n - 1; ++i) {
+        makeContraction(timeLimitForContraction, c_parameter);
+    }
+    std::cout<<"Current twin width: "<<currentTwinWidth_<<"\n";
 }
 
 int MonteCarloTreeSearch_v1::getBestTwinWidth() const {

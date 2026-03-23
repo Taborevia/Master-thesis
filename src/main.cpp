@@ -13,10 +13,11 @@
 int main() {
 
     std::string path = std::string(PROJECT_ROOT) + "/data/test_small_data_PACE2023/instances/tiny00";
-    for(int i = 1;i<10;i++){
-        std::shared_ptr<IGraph> g = readGraphFromFile(path + std::to_string(i) + ".gr");
+    for(int i = 1;i<2;i++){
+        // std::shared_ptr<IGraph> g = readGraphFromFile(path + std::to_string(i) + ".gr");
+        std::shared_ptr<IGraph> g = readGraphFromFile(path + std::to_string(1) + ".gr");
         std::shared_ptr<ITwinWidthSolver> solver = std::make_shared<MonteCarloTreeSearch_v1>(g);
-        solver->findSequence(5,3);
+        solver->findSequence(50,3);
         std::cout<<solver->getBestTwinWidth()<<std::endl;
         for (auto const& contraction : solver->getBestContractionSequence()){
             std::cout<<contraction.first<<" "<<contraction.second<<std::endl;

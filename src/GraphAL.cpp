@@ -197,6 +197,10 @@ void GraphAL::contractVertices(int u, int v) {
     redDegrees_[v]=0;
 }
 
+int GraphAL::getMaxRedDegree() const{
+    return maxRedDegree_;
+}
+
 int GraphAL::contractGraph(std::vector<std::pair<int,int>> contractionSequnce){
     for (const auto& contraction : contractionSequnce){
         // print();

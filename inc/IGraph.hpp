@@ -19,5 +19,6 @@ public:
     virtual void contractVertices(int u, int v) = 0;
     virtual int contractGraph(std::vector<std::pair<int,int>>) = 0;
     virtual int getNumberOfVertices() const = 0;
+    virtual int getMaxRedDegree() const = 0;
     virtual std::unique_ptr<IGraph> clone() const = 0;
 };
