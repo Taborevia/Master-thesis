@@ -197,6 +197,86 @@ void GraphAL::contractVertices(int u, int v) {
     redDegrees_[v]=0;
 }
 
+int GraphAL::estimateTwinWidthAfterContraction(int u, int v) const {
+    std::vector<std::pair<int, int>> mergedEdges;
+
+    auto itU = adjList_[u].begin();
+    auto itV = adjList_[v].begin();
+    int newVertexRedDegree = 0;
+    int newMaxRedDegree = maxRedDegree_;
+    while (itU != adjList_[u].end() && itV != adjList_[v].end()) {
+        if (itU->first == v) {
+            ++itU;
+            continue;
+        }
+        if (itV->first == u) {
+            ++itV;
+            continue;
+        }
+        if (itU->first < itV->first) {
+            newVertexRedDegree++;
+            if (itU->second!=2){
+                if (redDegrees_[itU->first]+1>newMaxRedDegree){
+                    newMaxRedDegree = redDegrees_[itU->first]+1;
+                }
+            }
+            ++itU;
+        } else if (itV->first < itU->first) {
+            newVertexRedDegree++;
+            if (itV->second!=2){
+                if (redDegrees_[itV->first] + 1>newMaxRedDegree){
+                    newMaxRedDegree = redDegrees_[itV->first] + 1;
+                }
+            }
+            ++itV;
+        } else {
+            bool uEdgeColor = itU->second == 2;
+            bool vEdgeColor = itV->second == 2;
+            int color = (uEdgeColor || vEdgeColor)
+                                  ? 2
+                                  : 1;
+            if ((itU->second == 2) || (itV->second == 2)){
+                newVertexRedDegree++;
+            }
+            ++itU;
+            ++itV;
+        }
+    }
+
+    while (itU != adjList_[u].end()) {
+        if (itU->first == v) {
+            ++itU;
+            continue;
+        }
+        newVertexRedDegree++;
+        if (itU->second!=2){
+            if (redDegrees_[itU->first]+1>newMaxRedDegree){
+                newMaxRedDegree = redDegrees_[itU->first]+1;
+            }
+        }
+        ++itU;
+    }
+
+    while (itV != adjList_[v].end()) {
+        if (itV->first == u) {
+            ++itV;
+            continue;
+        }
+        newVertexRedDegree++;
+        if (itV->second!=2){
+            if (redDegrees_[itV->first]+1>newMaxRedDegree){
+                newMaxRedDegree = redDegrees_[itV->first]+1;
+            }
+        }
+        ++itV;
+    }
+    // Usuń stare krawędzie i przypisz nową listę sąsiedztwa do wierzchołka u
+    if (newVertexRedDegree>newMaxRedDegree){
+        newMaxRedDegree = newVertexRedDegree;
+    }
+    return newMaxRedDegree;
+}
+
 int GraphAL::getMaxRedDegree() const{
     return maxRedDegree_;
 }

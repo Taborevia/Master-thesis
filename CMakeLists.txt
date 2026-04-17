@@ -15,6 +15,7 @@ add_executable(tests
     src/GraphAL.cpp
     src/GraphAM.cpp
     src/MonteCarloTreeSearch_v1.cpp
+    src/GreedySolver.cpp
     src/FileReader.cpp
 )
 target_compile_definitions(tests PRIVATE PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
@@ -24,6 +25,7 @@ target_link_libraries(tests gtest gtest_main)
 add_executable(main 
     src/GraphAL.cpp
     src/MonteCarloTreeSearch_v1.cpp
+    src/GreedySolver.cpp
     src/FileReader.cpp
     src/main.cpp
 )

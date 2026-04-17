@@ -45,4 +45,6 @@ private:
 
     std::shared_ptr<Node> bestContraction();
     void makeContraction(float resources, float c_parameter);
+    std::vector<std::pair<int,int>> generateRandomSequence(std::vector<int> vertices, unsigned int seed);
+    std::vector<std::pair<int,int>> generateGreedySequence(std::vector<int> vertices, int maxPairs, unsigned int seed);
 };

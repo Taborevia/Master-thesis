@@ -17,6 +17,7 @@ public:
     virtual bool isEdge(int u, int v, EdgeColor color = EdgeColor::Black) const = 0;
     virtual void print() const = 0;
     virtual void contractVertices(int u, int v) = 0;
+    virtual int estimateTwinWidthAfterContraction(int u, int v) const = 0;
     virtual int contractGraph(std::vector<std::pair<int,int>>) = 0;
     virtual int getNumberOfVertices() const = 0;
     virtual int getMaxRedDegree() const = 0;

@@ -8,7 +8,7 @@
 #include <iostream>
 #include <chrono>
 
-std::vector<std::pair<int,int>> generateRandomSequence(std::vector<int> vertices, unsigned int seed){
+std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::generateRandomSequence(std::vector<int> vertices, unsigned int seed){
     std::mt19937 rng(seed);
     std::vector<std::pair<int,int>> sequence;
     unsigned int n = vertices.size();

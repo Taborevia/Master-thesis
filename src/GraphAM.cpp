@@ -31,6 +31,9 @@ void GraphAM::print() const {
         std::cout << std::endl;
     }
 }
+int GraphAM::estimateTwinWidthAfterContraction(int u, int v) const {
+    return -1;
+}
 
 void GraphAM::contractVertices(int u, int v) {
     if (u == v) return;
