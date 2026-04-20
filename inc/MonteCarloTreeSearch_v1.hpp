@@ -11,7 +11,7 @@ struct Node {
     std::pair<int,int> contraction_;
     uint32_t visits_ = 0;
     double value_ = 0;
-    uint32_t maxTwinWidth_ = -1;
+    int32_t maxTwinWidth_ = -1;
     double squaredValue_ = 0;
 
     std::vector<std::pair<int,int>> possibleContractions_;

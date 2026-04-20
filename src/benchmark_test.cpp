@@ -11,9 +11,10 @@ int main() {
     // Stwórz benchmark z factory
     Benchmark benchmark(solverFactory);
     
-    auto result = benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_002.gr", 10, 3, 3, 3);
+    auto result = benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/test_small_data_PACE2023/instances/tiny005.gr", 10, 3, 1000, 3);
+    // auto result = benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_002.gr", 10, 3, 1000, 3);
     // auto result = benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/heuristic-private/instances/heuristic_001.gr", 10, 3, 3);
-    benchmark.printSummary({result});
+    // benchmark.printSummary({result});
 
     // Testuj exact-public
     // auto exactResults = benchmark.testExactPublic(0.5, 3, 1);
@@ -21,7 +22,7 @@ int main() {
     // benchmark.saveResults(exactResults, "results/exact_public_benchmark.csv");
     
     // Testuj small data
-    // auto smallResults = benchmark.testSmallData(60, 3, 10);
+    // auto smallResults = benchmark.testSmallData(30, 3, 100, 10);
     // benchmark.printSummary(smallResults);
     // benchmark.saveResults(smallResults, "results/small_data_benchmark.csv");
     
