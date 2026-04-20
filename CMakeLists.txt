@@ -33,6 +33,7 @@ add_executable(main
 add_executable(benchmark
     src/GraphAL.cpp
     src/MonteCarloTreeSearch_v1.cpp
+    src/GreedySolver.cpp
     src/FileReader.cpp
     src/Benchmark.cpp
     src/benchmark_test.cpp)

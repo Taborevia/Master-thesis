@@ -14,7 +14,8 @@ public:
     std::vector<std::pair<int,int>> possibleContractions(const std::set<int>& vertices) const;
     std::vector<std::pair<int,int>> possibleContractions(const std::vector<int>& vertices) const;
     std::vector<std::pair<int,int>> samplePossibleContractions(const std::vector<int>& vertices, int numberOfContractions) const;
-    void findSequence(float resources, float c_parameter) override;
+    void findSequence(float resources, float c_parameter, float D_parameter = 0) override;
+    void fullyFindSequence(float resources, float c_parameter);
     void partialFindSequence(int maxPairs);
 
     int getBestTwinWidth() const override;

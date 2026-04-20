@@ -67,6 +67,7 @@ std::vector<BenchmarkResult> Benchmark::runBenchmark(
     const std::string& expectedResultsFile,
     float resources,
     float c_parameter,
+    float D_parameter,
     int numThreads) {
     
     std::vector<BenchmarkResult> results;
@@ -96,17 +97,17 @@ std::vector<BenchmarkResult> Benchmark::runBenchmark(
     // If single threaded, use simple loop
     if (numThreads == 1) {
         for (size_t i = 0; i < graphFiles.size(); ++i) {
-            results[i] = processGraph(graphFiles[i], expectedResults, i, resources, c_parameter);
+            results[i] = processGraph(graphFiles[i], expectedResults, i, resources, c_parameter, D_parameter);
         }
     } else {
         // Multi-threaded processing
         std::vector<std::thread> threads;
         
         for (int t = 0; t < numThreads; ++t) {
-            threads.emplace_back([this, &graphFiles, &expectedResults, &results, resources, c_parameter, t, numThreads]() {
+            threads.emplace_back([this, &graphFiles, &expectedResults, &results, resources, c_parameter, D_parameter, t, numThreads]() {
                 // Each thread processes every numThreads-th file
                 for (size_t i = t; i < graphFiles.size(); i += numThreads) {
-                    results[i] = processGraph(graphFiles[i], expectedResults, i, resources, c_parameter);
+                    results[i] = processGraph(graphFiles[i], expectedResults, i, resources, c_parameter, D_parameter);
                 }
             });
         }
@@ -120,26 +121,41 @@ std::vector<BenchmarkResult> Benchmark::runBenchmark(
     return results;
 }
 
-std::vector<BenchmarkResult> Benchmark::testSmallData(float resources, float c_parameter, int numThreads) {
+std::vector<BenchmarkResult> Benchmark::testSmallData(float resources, float c_parameter, float D_parameter, int numThreads) {
     std::cout << "\n========== Testing Small Data PACE2023 ==========" << std::endl;
     return runBenchmark(
         std::string(PROJECT_ROOT) + "/data/test_small_data_PACE2023/instances",
         std::string(PROJECT_ROOT) + "/data/test_small_data_PACE2023/small_data_results.txt",
         resources,
         c_parameter,
+        D_parameter,
         numThreads
     );
 }
 
-std::vector<BenchmarkResult> Benchmark::testExactPublic(float resources, float c_parameter, int numThreads) {
+std::vector<BenchmarkResult> Benchmark::testExactPublic(float resources, float c_parameter, float D_parameter, int numThreads) {
     std::cout << "\n========== Testing Exact Public ==========" << std::endl;
     return runBenchmark(
         std::string(PROJECT_ROOT) + "/data/exact-public/instances",
         std::string(PROJECT_ROOT) + "/data/exact-public/exact_public_results.txt",
         resources,
         c_parameter,
+        D_parameter,
         numThreads
     );
+}
+
+BenchmarkResult Benchmark::runSingleGraph(
+    const std::string& graphFile,
+    float resources,
+    float c_parameter,
+    float D_parameter,
+    int expectedTwinWidth) {
+    std::vector<int> expectedResults;
+    if (expectedTwinWidth != -1) {
+        expectedResults.push_back(expectedTwinWidth);
+    }
+    return processGraph(graphFile, expectedResults, 0, resources, c_parameter, D_parameter);
 }
 
 BenchmarkResult Benchmark::processGraph(
@@ -147,7 +163,8 @@ BenchmarkResult Benchmark::processGraph(
     const std::vector<int>& expectedResults,
     size_t graphIndex,
     float resources,
-    float c_parameter) {
+    float c_parameter,
+    float D_parameter) {
     
     BenchmarkResult result;
     result.graphFile = fs::path(graphFile).filename().string();
@@ -168,7 +185,7 @@ BenchmarkResult Benchmark::processGraph(
         auto startTime = std::chrono::high_resolution_clock::now();
         
         // Run solver
-        solver->findSequence(resources, c_parameter);
+        solver->findSequence(resources, c_parameter, D_parameter);
         
         auto endTime = std::chrono::high_resolution_clock::now();
         result.executionTime = std::chrono::duration<double, std::milli>(

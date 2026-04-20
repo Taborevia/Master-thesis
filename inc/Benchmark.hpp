@@ -28,6 +28,7 @@ public:
     std::vector<BenchmarkResult> testSmallData(
         float resources = 1000.0f, 
         float c_parameter = 2.0f,
+        float D_parameter = 0.0f,
         int numThreads = 1
     );
     
@@ -35,7 +36,17 @@ public:
     std::vector<BenchmarkResult> testExactPublic(
         float resources = 1000.0f,
         float c_parameter = 2.0f,
+        float D_parameter = 0.0f,
         int numThreads = 1
+    );
+    
+    // Run a single graph file and optionally compare to an expected twin width
+    BenchmarkResult runSingleGraph(
+        const std::string& graphFile,
+        float resources = 1000.0f,
+        float c_parameter = 2.0f,
+        float D_parameter = 0.0f,
+        int expectedTwinWidth = -1
     );
     
     // Print results summary
@@ -58,6 +69,7 @@ private:
         const std::string& expectedResultsFile,
         float resources,
         float c_parameter,
+        float D_parameter,
         int numThreads
     );
     
@@ -67,7 +79,8 @@ private:
         const std::vector<int>& expectedResults,
         size_t graphIndex,
         float resources,
-        float c_parameter
+        float c_parameter,
+        float D_parameter
     );
     
     // Read expected results from file

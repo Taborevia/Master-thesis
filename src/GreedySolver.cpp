@@ -184,7 +184,7 @@ void GreedySolver::partialFindSequence(int maxPairs) {
               << std::chrono::duration_cast<std::chrono::milliseconds>(totalTime).count() << " ms\n";
 }
 
-void GreedySolver::findSequence(float resources, float c_parameter){
+void GreedySolver::fullyFindSequence(float resources, float c_parameter){
     auto totalStart = std::chrono::steady_clock::now();
     std::chrono::steady_clock::duration contractionsTime{};
     std::chrono::steady_clock::duration cloneTime{};
@@ -246,6 +246,14 @@ void GreedySolver::findSequence(float resources, float c_parameter){
               << std::chrono::duration_cast<std::chrono::milliseconds>(applyTime).count() << " ms\n"
               << "  total: "
               << std::chrono::duration_cast<std::chrono::milliseconds>(totalTime).count() << " ms\n";
+}
+
+void GreedySolver::findSequence(float resources, float c_parameter, float D_parameter){
+    if (resources > 0) {
+        partialFindSequence((int)resources); // maxPairs ustawione na 1000 dla testów
+    } else {
+        fullyFindSequence(resources, c_parameter);
+    }
 }
 
 int GreedySolver::getBestTwinWidth() const {
