@@ -16,6 +16,12 @@ struct BenchmarkResult {
     double executionTime; // in milliseconds
 };
 
+struct SolverParams {
+    float resources;
+    float c_parameter;
+    float D_parameter;
+};
+
 // Factory function type for creating solvers
 using SolverFactory = std::function<std::shared_ptr<ITwinWidthSolver>(std::shared_ptr<IGraph>)>;
 
@@ -58,6 +64,13 @@ public:
         const std::string& outputFile
     ) const;
     
+    std::vector<BenchmarkResult> runParameterSweep(
+        const std::string& graphFile,
+        const std::vector<SolverParams>& paramSets,
+        int expectedTwinWidth,
+        int numThreads
+    );
+
 private:
     SolverFactory solverFactory;
     mutable std::mutex resultsMutex;

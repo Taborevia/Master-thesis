@@ -234,6 +234,24 @@ void Benchmark::printSummary(const std::vector<BenchmarkResult>& results) const 
         std::cout << "No results to summarize." << std::endl;
         return;
     }
+
+    // --- SZCZEGÓŁOWA LISTA WYNIKÓW ---
+    std::cout << "\n" << std::setw(60) << std::left << "Configuration (File & Parameters)" 
+              << " | " << std::setw(10) << "Result" 
+              << " | " << std::setw(10) << "Expected" 
+              << " | " << std::setw(10) << "Time" << std::endl;
+    std::cout << std::string(95, '-') << std::endl;
+
+    for (const auto& res : results) {
+        std::string status = (res.actualTwinWidth == res.expectedTwinWidth) ? " [OK]" : " [DIFF]";
+        if (res.actualTwinWidth == -1) status = " [ERR]";
+
+        std::cout << std::setw(60) << std::left << res.graphFile 
+                  << " | " << std::setw(10) << (res.actualTwinWidth == -1 ? "ERROR" : std::to_string(res.actualTwinWidth))
+                  << " | " << std::setw(10) << (res.expectedTwinWidth == -1 ? "N/A" : std::to_string(res.expectedTwinWidth))
+                  << " | " << std::fixed << std::setprecision(2) << res.executionTime << " ms" 
+                  << status << std::endl;
+    }
     
     int totalTests = results.size();
     int passedTests = 0;
@@ -385,4 +403,46 @@ void Benchmark::saveResults(
     
     file.close();
     std::cout << "Results saved to: " << outputFile << std::endl;
+}
+
+std::vector<BenchmarkResult> Benchmark::runParameterSweep(
+    const std::string& graphFile,
+    const std::vector<SolverParams>& paramSets,
+    int expectedTwinWidth,
+    int numThreads) {
+
+    std::vector<BenchmarkResult> results(paramSets.size());
+    // Przygotowujemy wektor oczekiwanych wyników (wszystkie takie same dla tego samego grafu)
+    std::vector<int> expectedResults(paramSets.size(), expectedTwinWidth);
+
+    if (numThreads <= 0) numThreads = 1;
+    if (numThreads > (int)paramSets.size()) numThreads = paramSets.size();
+
+    std::cout << "\n========== Parameter Sweep for: " << fs::path(graphFile).filename().string() << " ==========" << std::endl;
+    std::cout << "Testing " << paramSets.size() << " parameter sets using " << numThreads << " thread(s)...\n" << std::endl;
+
+    std::vector<std::thread> threads;
+
+    for (int t = 0; t < numThreads; ++t) {
+        threads.emplace_back([this, &graphFile, &expectedResults, &paramSets, &results, t, numThreads]() {
+            for (size_t i = t; i < paramSets.size(); i += numThreads) {
+                const auto& p = paramSets[i];
+                
+                // Wywołujemy procesowanie
+                results[i] = processGraph(graphFile, expectedResults, i, p.resources, p.c_parameter, p.D_parameter);
+                
+                // MODYFIKACJA: Dodajemy info o parametrach do nazwy, by printSummary() i saveResults() je uwzględniły
+                std::stringstream ss;
+                ss << fs::path(graphFile).filename().string() 
+                   << " [res=" << p.resources << ", c=" << p.c_parameter << ", D=" << p.D_parameter << "]";
+                results[i].graphFile = ss.str();
+            }
+        });
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    return results;
 }
