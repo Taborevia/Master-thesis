@@ -5,9 +5,12 @@
 int main() {
     // Utwórz factory function dla solvera
     auto solverFactory = [](std::shared_ptr<IGraph> graph) {
+        auto solver = std::make_shared<MonteCarloTreeSearch_v1>(graph, 100, 10, 10, 10.0); // maxPairs ustawione na 1000 dla testów
+        // solver->dynamicTimeDistribution_ = true;
         // return std::make_shared<MonteCarloTreeSearch_v1>(graph,100,100,10); // maxPairs ustawione na 1000 dla testów
-        return std::make_shared<GreedySolver>(graph); // maxPairs ustawione na 1000 dla testów
+        // return std::make_shared<GreedySolver>(graph); // maxPairs ustawione na 1000 dla testów
         // return std::make_shared<MonteCarloTreeSearch_v1>(graph, 100, 10, 10); // maxPairs ustawione na 1000 dla testów
+        return solver;
     };
     
     // Stwórz benchmark z factory
@@ -15,9 +18,9 @@ int main() {
     
     // auto result = benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/test_small_data_PACE2023/instances/tiny005.gr", 10, 3, 1000, 3);
     std::vector<BenchmarkResult> results;
-    results.push_back(benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_198.gr", 30000, 1, 1000, 2));
-    // results.push_back(benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_068.gr", 60, 1.5, 1000, 3));
-    // results.push_back(benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_068.gr", 60, 1.75, 1000, 3));
+    // results.push_back(benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_198.gr", 30000, 1, 1000, 2));
+    // results.push_back(benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_198.gr", 60, 1.5, 1000, 2));
+    results.push_back(benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/heuristic-private/instances/heuristic_001.gr", 20, 1.5, 1000, 2));
     // results.push_back(benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_068.gr", 60, 2, 1000, 3));
     for (const auto& result : results) {
         benchmark.printSummary({result});

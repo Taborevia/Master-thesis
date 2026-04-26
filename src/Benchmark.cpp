@@ -187,6 +187,16 @@ BenchmarkResult Benchmark::processGraph(
         // Run solver
         solver->findSequence(resources, c_parameter, D_parameter);
         
+        auto bestSequence = solver->getBestContractionSequence();
+        std::ofstream file(std::string(PROJECT_ROOT) + "/results/" + result.graphFile);
+        std::cout << "zapisuje do pliku sekwencje "<< std::endl;
+        if (!file.is_open()) {
+            std::cerr << "Cannot open output file"<<std::endl;
+        }
+        for (const auto& pair : bestSequence) {
+            file << pair.first + 1 << " " << pair.second + 1 << "\n";
+        }
+
         auto endTime = std::chrono::high_resolution_clock::now();
         result.executionTime = std::chrono::duration<double, std::milli>(
             endTime - startTime

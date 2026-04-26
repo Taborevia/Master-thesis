@@ -12,7 +12,9 @@ struct Node {
     uint32_t visits_ = 0;
     double value_ = 0;
     int32_t maxTwinWidth_ = -1;
+    int32_t minTwinWidth_ = INT32_MAX;
     double squaredValue_ = 0;
+    int32_t currentTwinWidth = -1;
 
     std::vector<std::pair<int,int>> possibleContractions_;
     std::vector<std::shared_ptr<Node>> children_;
@@ -24,17 +26,21 @@ struct Node {
 class MonteCarloTreeSearch_v1 : public ITwinWidthSolver {
 
 public:
+    int32_t dynamicTimeDistribution_ = 0;
+
+
     MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs = -1);
     MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs, uint32_t greedySimulationPairs, uint32_t greedySimulationDepth);
+    MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs, uint32_t greedySimulationPairs, uint32_t greedySimulationDepth, double PTW_coeff);
     std::vector<std::pair<int,int>> possibleContractions(VerticesPositions& vertices, int32_t maxPairs);
     void findSequence(float resources, float c_parameter, float D_parameter = 0) override;
     
-    std::shared_ptr<Node> expand(std::shared_ptr<Node> state, VerticesPositions& vertices);
-    std::shared_ptr<Node> bestChild(std::shared_ptr<Node> state, float c, float D);
-    std::tuple<std::shared_ptr<Node>,std::vector<std::pair<int,int>>> treePolicy(std::shared_ptr<Node> state, float c, float D, VerticesPositions& vertices, std::vector<std::pair<int,int>>& contractionSequence);
-    void backPropagation(std::shared_ptr<Node> state, int reward);
+    std::shared_ptr<Node> expand(const std::shared_ptr<Node>& state, VerticesPositions& vertices);
+    std::shared_ptr<Node> bestChild(const std::shared_ptr<Node>& state, float c, float D);
+    std::shared_ptr<Node> treePolicy(const std::shared_ptr<Node>& state, float c, float D, VerticesPositions& vertices, std::vector<std::pair<int,int>>& contractionSequence);
+    void backPropagation(const std::shared_ptr<Node>& state, int reward);
     uint32_t randomDefaultPolicy(std::vector<std::pair<int,int>> contractionSequence, VerticesPositions vertices);
-    uint32_t greedyDefaultPolicy(std::vector<std::pair<int,int>> contractionSequence, VerticesPositions vertices, int maxPairs, int depth);
+    uint32_t greedyDefaultPolicy(std::vector<std::pair<int,int>> contractionSequence, VerticesPositions vertices, const std::shared_ptr<Node>& node, int maxPairs, int depth);
     
     int getBestTwinWidth() const override;
     std::vector<std::pair<int,int>> getBestContractionSequence() const override;
@@ -50,9 +56,13 @@ private:
     int maxPairs_;
     uint32_t greedySimulationPairs_ = 0;
     uint32_t greedySimulationDepth_ = 0;
+    double PTW_coeff_ = 0.0;
 
-    float UCT(std::shared_ptr<Node> state, int child, float c) const;
-    float SPUCT(std::shared_ptr<Node> state, int child, float c, float D) const;
+    float UCT(const std::shared_ptr<Node>& state, int child, float c) const;
+    // Single Player UCT
+    float SPUCT(const std::shared_ptr<Node>& state, int child, float c, float D) const;
+    // SPUT with ,,partial twin-width''
+    float SPUCT_PTW(const std::shared_ptr<Node>& state, int child, float c, float D) const;
     std::shared_ptr<Node> bestContraction();
     void makeContraction(float resources, float c_parameter, float D_parameter);
     std::vector<std::pair<int,int>> generateRandomSequence(VerticesPositions vertices, unsigned int seed);
