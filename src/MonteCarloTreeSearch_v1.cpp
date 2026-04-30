@@ -24,17 +24,8 @@ void printMemoryUsage() {
 }
 
 
-MonteCarloTreeSearch_v1::MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs) : graph_(graph), maxPairs_(maxPairs), vertices_(graph->getNumberOfVertices()) {
-    root_ = std::make_shared<Node>(std::make_pair(-1,-1),std::weak_ptr<Node>());
-    bestTwinWidth_ = INT32_MAX;
-}
-
-MonteCarloTreeSearch_v1::MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs,  uint32_t greedySimulationPairs, uint32_t greedySimulationDepth) : graph_(graph), maxPairs_(maxPairs), vertices_(graph->getNumberOfVertices()), greedySimulationPairs_(greedySimulationPairs), greedySimulationDepth_(greedySimulationDepth) {
-    root_ = std::make_shared<Node>(std::make_pair(-1,-1),std::weak_ptr<Node>());
-    bestTwinWidth_ = INT32_MAX;
-}
-
-MonteCarloTreeSearch_v1::MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs,  uint32_t greedySimulationPairs, uint32_t greedySimulationDepth, double PTW_coeff) : graph_(graph), maxPairs_(maxPairs), vertices_(graph->getNumberOfVertices()), greedySimulationPairs_(greedySimulationPairs), greedySimulationDepth_(greedySimulationDepth), PTW_coeff_(PTW_coeff) {
+MonteCarloTreeSearch_v1::MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs, uint32_t greedySimulationPairs, uint32_t greedySimulationDepth, double PTW_coeff, int32_t dynamicTimeDistribution) 
+    : graph_(graph), maxPairs_(maxPairs), vertices_(graph->getNumberOfVertices()), greedySimulationPairs_(greedySimulationPairs), greedySimulationDepth_(greedySimulationDepth), PTW_coeff_(PTW_coeff), dynamicTimeDistribution_(dynamicTimeDistribution) {
     root_ = std::make_shared<Node>(std::make_pair(-1,-1),std::weak_ptr<Node>());
     bestTwinWidth_ = INT32_MAX;
 }
@@ -394,20 +385,37 @@ void MonteCarloTreeSearch_v1::makeContraction(float resources, float c_parameter
               << "  backPropagation total: " << std::chrono::duration_cast<std::chrono::milliseconds>(backPropagationTime).count() << " ms\n"
               << "  contractVertices: " << std::chrono::duration_cast<std::chrono::milliseconds>(contractTime).count() << " ms\n"
               << "  simulations counter: " << simulationCounter << "\n"
-              << " total time for makeContraction: " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << " ms\n";
+              << " total time for makeContraction: " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << " ms\n"
+              << " Current TwinWidth: "<< currentTwinWidth_ <<"\n";
 }
 
 void MonteCarloTreeSearch_v1::findSequence(float resources, float c_parameter, float D_parameter){
     int n = graph_->getNumberOfVertices();
+    std::vector<int32_t> twinWidths;
     std::vector<double> timeLimits;
     timeLimits.reserve(n - 1);
-    if (dynamicTimeDistribution_) {
+    
+    if (dynamicTimeDistribution_ == 1) {
         for (int i = n-2; i >= 0; --i) {
             timeLimits[(n-2)-i] = resources * ((i + 1) / (n*(n-1)/2.0));
         }
         for (int i = 0; i < n - 1; ++i) {
-            // printMemoryUsage();
             makeContraction(timeLimits[i], c_parameter, D_parameter);
+            twinWidths.push_back(currentTwinWidth_);
+        }
+        if (bestTwinWidth_ > currentTwinWidth_){
+            bestTwinWidth_ = currentTwinWidth_;
+            bestSequence_ = currentSequence_;
+        }
+    } else if (dynamicTimeDistribution_ == 2) {
+        double quadraticSum = (double)(n-1) * n * (2*n - 1) / 6.0;
+        for (int i = n-2; i >= 0; --i) {
+            double weight = (i + 1) * (i + 1);
+            timeLimits[(n-2)-i] = resources * (weight / quadraticSum);
+        }
+        for (int i = 0; i < n - 1; ++i) {
+            makeContraction(timeLimits[i], c_parameter, D_parameter);
+            twinWidths.push_back(currentTwinWidth_);
         }
         if (bestTwinWidth_ > currentTwinWidth_){
             bestTwinWidth_ = currentTwinWidth_;
@@ -416,11 +424,15 @@ void MonteCarloTreeSearch_v1::findSequence(float resources, float c_parameter, f
     } else {
         for (int i = 0; i < n - 1; ++i) {
             makeContraction(resources / (n - 1), c_parameter, D_parameter);
+            twinWidths.push_back(currentTwinWidth_);
         }
         if (bestTwinWidth_ > currentTwinWidth_){
             bestTwinWidth_ = currentTwinWidth_;
             bestSequence_ = currentSequence_;
         }
+    }
+    for (auto& i : twinWidths){
+        std::cout << i << " -> ";
     }
 }
 

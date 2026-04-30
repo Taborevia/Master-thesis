@@ -15,6 +15,7 @@ struct Node {
     int32_t minTwinWidth_ = INT32_MAX;
     double squaredValue_ = 0;
     int32_t currentTwinWidth = -1;
+    bool active = true;
 
     std::vector<std::pair<int,int>> possibleContractions_;
     std::vector<std::shared_ptr<Node>> children_;
@@ -27,6 +28,7 @@ class MonteCarloTreeSearch_v1 : public ITwinWidthSolver {
 
 public:
     int32_t dynamicTimeDistribution_ = 0;
+    int32_t bestKnownTwinWidth_ = INT32_MAX;
 
 
     MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs = -1, uint32_t greedySimulationPairs = 0, uint32_t greedySimulationDepth = 0, double PTW_coeff = 0.0, int32_t dynamicTimeDistribution = 0);
