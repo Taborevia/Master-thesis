@@ -7,37 +7,29 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-O3)
 
+add_library(twin_width_core OBJECT
+    src/GraphAL.cpp
+    src/MonteCarloTreeSearch_v1.cpp
+    src/GreedySolver.cpp
+    src/FileReader.cpp
+)
+target_compile_options(twin_width_core PRIVATE -O3)
+
+target_compile_definitions(twin_width_core PUBLIC PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
+target_include_directories(twin_width_core PUBLIC inc)
+
+add_executable(main src/main.cpp)
+target_link_libraries(main PRIVATE twin_width_core)
+
+add_executable(benchmark 
+    src/Benchmark.cpp 
+    src/benchmark_test.cpp
+)
+target_link_libraries(benchmark PRIVATE twin_width_core)
+
 add_subdirectory(external/googletest)
-include_directories(inc)
-
-add_executable(tests
-    test/test.cpp
-    src/GraphAL.cpp
+add_executable(tests 
+    test/test.cpp 
     src/GraphAM.cpp
-    src/MonteCarloTreeSearch_v1.cpp
-    src/GreedySolver.cpp
-    src/FileReader.cpp
 )
-target_compile_definitions(tests PRIVATE PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
-target_include_directories(tests PRIVATE inc)
-target_link_libraries(tests gtest gtest_main)
-
-add_executable(main 
-    src/GraphAL.cpp
-    src/MonteCarloTreeSearch_v1.cpp
-    src/GreedySolver.cpp
-    src/FileReader.cpp
-    src/main.cpp
-)
-
-add_executable(benchmark
-    src/GraphAL.cpp
-    src/MonteCarloTreeSearch_v1.cpp
-    src/GreedySolver.cpp
-    src/FileReader.cpp
-    src/Benchmark.cpp
-    src/benchmark_test.cpp)
-target_compile_definitions(benchmark PRIVATE PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
-target_include_directories(benchmark PRIVATE inc)
-
-target_compile_definitions(main PRIVATE PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
+target_link_libraries(tests PRIVATE twin_width_core gtest gtest_main)
