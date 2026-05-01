@@ -10,6 +10,7 @@ add_compile_options(-O3)
 add_library(twin_width_core OBJECT
     src/GraphAL.cpp
     src/MonteCarloTreeSearch_v1.cpp
+    src/MonteCarloTreeSearchExact.cpp
     src/GreedySolver.cpp
     src/FileReader.cpp
 )
