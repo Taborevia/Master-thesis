@@ -1,5 +1,6 @@
 #include "FileReader.hpp"
 #include <GraphAL.hpp>
+#include <GraphAM.hpp>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>

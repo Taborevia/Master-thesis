@@ -73,7 +73,7 @@ std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::possibleContractions(Ve
     } else {
         result.reserve(maxPairs);
         
-        static std::mt19937 gen(std::random_device{}());
+        static std::mt19937 gen(2);
         std::uniform_int_distribution<uint32_t> dist(0, n - 1);
         // after_random = std::chrono::high_resolution_clock::now();
         std::unordered_set<uint64_t> selected;
@@ -262,12 +262,28 @@ uint32_t MonteCarloTreeSearch_v1::randomDefaultPolicy(std::vector<std::pair<int,
 }
 
 uint32_t MonteCarloTreeSearch_v1::greedyDefaultPolicy(std::vector<std::pair<int,int>> contractionSequence, VerticesPositions vertices, const std::shared_ptr<Node>& node, int maxPairs, int depth){
+    auto totalStart = std::chrono::high_resolution_clock::now();
+    auto cloneStart = std::chrono::high_resolution_clock::now();
     auto graph = graph_->clone();
-    // std::cout << "Greedy default policy with depth " << depth << " and maxPairs " << maxPairs << std::endl;
+    auto cloneEnd = std::chrono::high_resolution_clock::now();
+
+    auto contractStart = std::chrono::high_resolution_clock::now();
     graph->contractGraph(contractionSequence);
+    auto contractEnd = std::chrono::high_resolution_clock::now();
+
     node->currentTwinWidth = graph->getMaxRedDegree();
+
+    std::chrono::duration<double> loopDuration{};
+    std::chrono::duration<double> contractionSelectionDuration{};
+    std::chrono::duration<double> contractVertexDuration{};
+    int iterationCount = 0;
+
     while (depth > 0 && vertices.vertices.size() > 1) {
+        iterationCount++;
+        auto loopStart = std::chrono::high_resolution_clock::now();
+
         std::pair<int,int> bestPair;
+        auto selectionStart = std::chrono::high_resolution_clock::now();
         auto contractions = possibleContractions(vertices, maxPairs);
         uint32_t bestTwinWidth = UINT32_MAX;
         for (const auto& [u, v] : contractions) {
@@ -277,10 +293,32 @@ uint32_t MonteCarloTreeSearch_v1::greedyDefaultPolicy(std::vector<std::pair<int,
                 bestPair = {u, v};
             }
         }
+        auto selectionEnd = std::chrono::high_resolution_clock::now();
+        contractionSelectionDuration += selectionEnd - selectionStart;
+
+        auto contractVertexStart = std::chrono::high_resolution_clock::now();
         graph->contractVertices(bestPair.first, bestPair.second);
         vertices.erase(bestPair.second);
+        auto contractVertexEnd = std::chrono::high_resolution_clock::now();
+        contractVertexDuration += contractVertexEnd - contractVertexStart;
+
+        auto loopEnd = std::chrono::high_resolution_clock::now();
+        loopDuration += loopEnd - loopStart;
         depth--;
     }
+
+    auto totalEnd = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> totalDuration = totalEnd - totalStart;
+
+    // std::cout << "greedyDefaultPolicy timings:\n"
+    //           << "  clone: " << std::chrono::duration_cast<std::chrono::microseconds>(cloneEnd - cloneStart).count() << " ms\n"
+    //           << "  contract initial sequence: " << std::chrono::duration_cast<std::chrono::microseconds>(contractEnd - contractStart).count() << " ms\n"
+    //           << "  loop total: " << std::chrono::duration_cast<std::chrono::microseconds>(loopDuration).count() << " ms\n"
+    //           << "  selection total: " << std::chrono::duration_cast<std::chrono::microseconds>(contractionSelectionDuration).count() << " ms\n"
+    //           << "  vertex contraction total: " << std::chrono::duration_cast<std::chrono::microseconds>(contractVertexDuration).count() << " ms\n"
+    //           << "  iterations: " << iterationCount << "\n"
+    //           << "  total: " << std::chrono::duration_cast<std::chrono::microseconds>(totalDuration).count() << " ms\n";
+
     return graph->getMaxRedDegree();
 }
 

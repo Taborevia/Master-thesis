@@ -4,7 +4,7 @@
 
 class GraphAM : public IGraph {
 public:
-    GraphAM(int vertices);
+    GraphAM(uint32_t vertices);
 
     void addEdge(int u, int v, EdgeColor color = EdgeColor::Black) override;
     bool isEdge(int u, int v, EdgeColor color = EdgeColor::Black) const override;
@@ -17,8 +17,15 @@ public:
     int getMaxRedDegree() const;
 
 private:
-    int vertices_;
-    int maxRedDegree_;
-    std::vector<std::vector<int>> adjMatrix_; // 0: no edge, 1: black, 2: red
-    std::vector<int> redDegrees_;
+    uint32_t vertices_;
+    uint32_t wordsPerRow_;
+    uint32_t maxRedDegree_ = 0;
+    std::vector<uint64_t> adjBlack_;
+    std::vector<uint64_t> adjRed_;
+    std::vector<uint64_t> activeVertices_;
+    std::vector<uint32_t> redDegrees_;
+
+    inline void set_bit(std::vector<uint64_t>& vec, uint32_t u, uint32_t v);
+    inline void clear_bit(std::vector<uint64_t>& vec, uint32_t u, uint32_t v);
+    inline bool get_bit(const std::vector<uint64_t>& vec, uint32_t u, uint32_t v) const;
 };

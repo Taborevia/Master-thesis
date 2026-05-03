@@ -2,13 +2,14 @@ cmake_minimum_required(VERSION 3.10)
 project(TwinWidth)
 add_compile_options(-fdiagnostics-color=always)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_compile_options(-O3)
 
 add_library(twin_width_core OBJECT
     src/GraphAL.cpp
+    src/GraphAM.cpp
     src/MonteCarloTreeSearch_v1.cpp
     src/MonteCarloTreeSearchExact.cpp
     src/GreedySolver.cpp
@@ -31,6 +32,5 @@ target_link_libraries(benchmark PRIVATE twin_width_core)
 add_subdirectory(external/googletest)
 add_executable(tests 
     test/test.cpp 
-    src/GraphAM.cpp
 )
 target_link_libraries(tests PRIVATE twin_width_core gtest gtest_main)
