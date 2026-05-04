@@ -32,7 +32,7 @@ int main() {
     // results.push_back(benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_198.gr", 60, 1.5, 1000, 2));
     // results.push_back(benchmark.runSingleGraph(std::string(PROJECT_ROOT) + "/data/heuristic-private/instances/heuristic_001.gr", 20, 1.5, 1000, 2));
     // results.push_back(benchmark0.runSingleGraph(std::string(PROJECT_ROOT) + "/data/test_small_data_PACE2023/instances/tiny005.gr", 10, 1.5, 1000, 0));
-    results.push_back(benchmark0.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_192.gr", 6000, 1.5, 1000, 2));
+    results.push_back(benchmark0.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_068.gr", 10, 1.5, 1000, 2));
     // results.push_back(benchmark2.runSingleGraph(std::string(PROJECT_ROOT) + "/data/exact-public/instances/exact_068.gr", 30, 1.5, 1000, 2));
     for (const auto& result : results) {
         benchmark0.printSummary({result});

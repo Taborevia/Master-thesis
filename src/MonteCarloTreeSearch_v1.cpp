@@ -9,7 +9,7 @@
 #include <chrono>
 #include <iomanip>
 #include <unordered_set>
-
+#include <queue>
 
 #include <windows.h>
 #include <psapi.h>
@@ -24,8 +24,8 @@ void printMemoryUsage() {
 }
 
 
-MonteCarloTreeSearch_v1::MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs, uint32_t greedySimulationPairs, uint32_t greedySimulationDepth, double PTW_coeff, int32_t dynamicTimeDistribution) 
-    : graph_(graph), maxPairs_(maxPairs), vertices_(graph->getNumberOfVertices()), greedySimulationPairs_(greedySimulationPairs), greedySimulationDepth_(greedySimulationDepth), PTW_coeff_(PTW_coeff), dynamicTimeDistribution_(dynamicTimeDistribution) {
+MonteCarloTreeSearch_v1::MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs, uint32_t greedySimulationPairs, uint32_t greedySimulationDepth, double PTW_coeff, int32_t dynamicTimeDistribution, int32_t numOfBestPairs) 
+    : graph_(graph), maxPairs_(maxPairs), vertices_(graph->getNumberOfVertices()), greedySimulationPairs_(greedySimulationPairs), greedySimulationDepth_(greedySimulationDepth), PTW_coeff_(PTW_coeff), dynamicTimeDistribution_(dynamicTimeDistribution), numOfBestPairs_(numOfBestPairs) {
     root_ = std::make_shared<Node>(std::make_pair(-1,-1),std::weak_ptr<Node>());
     bestTwinWidth_ = INT32_MAX;
 }
@@ -128,6 +128,52 @@ std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::possibleContractions(Ve
     return result;
 }
 
+std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::bestPossibleContractions(
+    const IGraph& graph, 
+    VerticesPositions& vertices, 
+    int32_t numberOfContractions) {
+    
+    int n = vertices.vertices.size();
+    if (n < 2) return {};
+
+    int totalPairs = n * (n - 1) / 2;
+    if (numberOfContractions < 0 || numberOfContractions > totalPairs) {
+        return possibleContractions(vertices, numberOfContractions);
+    }
+
+    size_t k = static_cast<size_t>(numberOfContractions);
+    std::priority_queue<std::pair<uint32_t, std::pair<int,int>>> bestPairs;
+
+    for (size_t i = 0; i < n; ++i) {
+        uint32_t u = vertices.vertices[i]; 
+        for (size_t j = i + 1; j < n; ++j) {
+            uint32_t v = vertices.vertices[j];
+            
+            auto value = graph.estimateTwinWidthAfterContraction(u, v);
+            
+            if (bestPairs.size() < k) {
+                bestPairs.emplace(value, std::make_pair(u, v));
+            } else if (value < bestPairs.top().first) {
+                bestPairs.pop();
+                bestPairs.emplace(value, std::make_pair(u, v));
+            }
+        }
+    }
+
+    std::vector<std::pair<int,int>> result;
+    result.reserve(bestPairs.size());
+    
+    while (!bestPairs.empty()) {
+        result.push_back(bestPairs.top().second);
+        bestPairs.pop();
+    }
+
+    std::reverse(result.begin(), result.end());
+
+    return result;
+}
+
+
 float MonteCarloTreeSearch_v1::UCT(const std::shared_ptr<Node>& state, int child, float c) const {
     // if (state->children_.at(child)->visits_ > 1) {
     //     std::cout << "\n\n\nvalue: " << (1-(((float)state->children_.at(child)->value_/state->maxTwinWidth_)/state->children_.at(child)->visits_)) << std::endl;
@@ -205,73 +251,54 @@ std::shared_ptr<Node> MonteCarloTreeSearch_v1::bestChild(const std::shared_ptr<N
     return state->children_.at(best_child);
 }
 
-std::shared_ptr<Node> MonteCarloTreeSearch_v1::expand(const std::shared_ptr<Node>& state, VerticesPositions& vertices){
-    // auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    // std::mt19937 rng(static_cast<unsigned>(seed));
-    // std::uniform_int_distribution<int> genRand(0, state->possible_actions.size()-1);
-    // int move = genRand(rng);
+std::shared_ptr<Node> MonteCarloTreeSearch_v1::expand(const std::shared_ptr<Node>& state, VerticesPositions& vertices, IGraph& graph){
     auto new_contraction = state->possibleContractions_.back();
     state->possibleContractions_.pop_back();
     vertices.erase(new_contraction.second);
     auto new_state = std::make_shared<Node>(new_contraction,state);
-    new_state->possibleContractions_ = possibleContractions(vertices, maxPairs_);
-
+    if (numOfBestPairs_ > 0){
+        new_state->possibleContractions_ = bestPossibleContractions(graph, vertices, numOfBestPairs_);
+    } else {
+        new_state->possibleContractions_ = possibleContractions(vertices, maxPairs_);
+    }
     state->children_.push_back(new_state);
 
     return new_state;
 }
 
-std::shared_ptr<Node> MonteCarloTreeSearch_v1::treePolicy(const std::shared_ptr<Node>& state, float c, float D, VerticesPositions& vertices, std::vector<std::pair<int,int>>& contractionSequence){
+std::shared_ptr<Node> MonteCarloTreeSearch_v1::treePolicy(const std::shared_ptr<Node>& state, float c, float D, VerticesPositions& vertices, std::vector<std::pair<int,int>>& contractionSequence, IGraph& graph){
     if(state->possibleContractions_.size()==0 && state->children_.size()==0){
         return state;
     }
     // do dodania, warunek konca kontrakcji
     if (state->possibleContractions_.size()!=0){
-        auto result = expand(state,vertices);
+        auto result = expand(state,vertices, graph);
         contractionSequence.push_back(result->contraction_);
+        graph.contractVertices(result->contraction_.first, result->contraction_.second);
         return result;
     }else{
         auto child = bestChild(state,c,D);
         vertices.erase(child->contraction_.second);
         contractionSequence.push_back(child->contraction_);
-        return treePolicy(child,c,D,vertices,contractionSequence);
+        graph.contractVertices(child->contraction_.first, child->contraction_.second);
+        return treePolicy(child,c,D,vertices,contractionSequence, graph);
     }
 }
 
-uint32_t MonteCarloTreeSearch_v1::randomDefaultPolicy(std::vector<std::pair<int,int>> contractionSequence, VerticesPositions vertices){
+uint32_t MonteCarloTreeSearch_v1::randomDefaultPolicy(std::vector<std::pair<int,int>> contractionSequence, VerticesPositions vertices, IGraph& graph){
     uint32_t result = 0;
-    auto graphCopyStart = std::chrono::high_resolution_clock::now();
-    auto graphCopy = graph_->clone();
-    auto graphCopyEnd = std::chrono::high_resolution_clock::now();
     auto randomContractionSequence = generateRandomSequence(vertices, std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    auto randomSequenceEnd = std::chrono::high_resolution_clock::now();
     contractionSequence.insert(contractionSequence.end(),randomContractionSequence.begin(),randomContractionSequence.end());
-    auto contractionSequnceInsertEnd = std::chrono::high_resolution_clock::now();
-    result = graphCopy->contractGraph(contractionSequence);
-    auto contractGraphEnd = std::chrono::high_resolution_clock::now();
+    result = graph.contractGraph(randomContractionSequence);
     if (bestTwinWidth_>result){
         bestTwinWidth_=result;
         bestSequence_=contractionSequence;
     }
-    // std::cout << "defaultPolicy profiling:\n"
-    //           << "  graph clone: " << std::chrono::duration_cast<std::chrono::microseconds>(graphCopyEnd - graphCopyStart).count() << " us\n"
-    //           << "  generate random sequence: " << std::chrono::duration_cast<std::chrono::microseconds>(randomSequenceEnd - graphCopyEnd).count() << " us\n"
-    //           << "  insert contraction sequence: " << std::chrono::duration_cast<std::chrono::microseconds>(contractionSequnceInsertEnd - randomSequenceEnd).count() << " us\n"
-    //           << "  contractGraph: " << std::chrono::duration_cast<std::chrono::microseconds>(contractGraphEnd - contractionSequnceInsertEnd).count() << " us\n";
     return result;
 }
 
-uint32_t MonteCarloTreeSearch_v1::greedyDefaultPolicy(std::vector<std::pair<int,int>> contractionSequence, VerticesPositions vertices, const std::shared_ptr<Node>& node, int maxPairs, int depth){
+uint32_t MonteCarloTreeSearch_v1::greedyDefaultPolicy(std::vector<std::pair<int,int>> contractionSequence, VerticesPositions vertices, const std::shared_ptr<Node>& node, int maxPairs, int depth, IGraph& graph){
     auto totalStart = std::chrono::high_resolution_clock::now();
-    auto cloneStart = std::chrono::high_resolution_clock::now();
-    auto graph = graph_->clone();
-    auto cloneEnd = std::chrono::high_resolution_clock::now();
-
-    auto contractStart = std::chrono::high_resolution_clock::now();
-    graph->contractGraph(contractionSequence);
-    auto contractEnd = std::chrono::high_resolution_clock::now();
-
-    node->currentTwinWidth = graph->getMaxRedDegree();
 
     std::chrono::duration<double> loopDuration{};
     std::chrono::duration<double> contractionSelectionDuration{};
@@ -287,7 +314,7 @@ uint32_t MonteCarloTreeSearch_v1::greedyDefaultPolicy(std::vector<std::pair<int,
         auto contractions = possibleContractions(vertices, maxPairs);
         uint32_t bestTwinWidth = UINT32_MAX;
         for (const auto& [u, v] : contractions) {
-            uint32_t twinWidthAfterContraction = graph->estimateTwinWidthAfterContraction(u, v);
+            uint32_t twinWidthAfterContraction = graph.estimateTwinWidthAfterContraction(u, v);
             if (twinWidthAfterContraction < bestTwinWidth) {
                 bestTwinWidth = twinWidthAfterContraction;
                 bestPair = {u, v};
@@ -297,7 +324,7 @@ uint32_t MonteCarloTreeSearch_v1::greedyDefaultPolicy(std::vector<std::pair<int,
         contractionSelectionDuration += selectionEnd - selectionStart;
 
         auto contractVertexStart = std::chrono::high_resolution_clock::now();
-        graph->contractVertices(bestPair.first, bestPair.second);
+        graph.contractVertices(bestPair.first, bestPair.second);
         vertices.erase(bestPair.second);
         auto contractVertexEnd = std::chrono::high_resolution_clock::now();
         contractVertexDuration += contractVertexEnd - contractVertexStart;
@@ -319,7 +346,7 @@ uint32_t MonteCarloTreeSearch_v1::greedyDefaultPolicy(std::vector<std::pair<int,
     //           << "  iterations: " << iterationCount << "\n"
     //           << "  total: " << std::chrono::duration_cast<std::chrono::microseconds>(totalDuration).count() << " ms\n";
 
-    return graph->getMaxRedDegree();
+    return graph.getMaxRedDegree();
 }
 
 void MonteCarloTreeSearch_v1::backPropagation(const std::shared_ptr<Node>& state, int reward){
@@ -377,21 +404,22 @@ void MonteCarloTreeSearch_v1::makeContraction(float resources, float c_parameter
     std::chrono::duration<double> backPropagationTime{};
 
     while(duration.count() < resources){
+        auto graphCopy = graph_->clone();
         simulationCounter++;
         auto temp = vertices_;
         std::vector<std::pair<int,int>> contractionSequence;
 
         auto treeStart = std::chrono::high_resolution_clock::now();
-        auto node = treePolicy(root_,c_parameter,D_parameter,temp,contractionSequence);
+        auto node = treePolicy(root_,c_parameter,D_parameter,temp,contractionSequence, *graphCopy);
         auto treeEnd = std::chrono::high_resolution_clock::now();
         treePolicyTime += treeEnd - treeStart;
 
         auto defaultStart = std::chrono::high_resolution_clock::now();
         uint32_t result;
         if (greedySimulationPairs_ > 0 && greedySimulationDepth_ > 0) {
-            result = greedyDefaultPolicy(contractionSequence, temp, node, greedySimulationPairs_, greedySimulationDepth_);
+            result = greedyDefaultPolicy(contractionSequence, temp, node, greedySimulationPairs_, greedySimulationDepth_, *graphCopy);
         } else {
-            result = randomDefaultPolicy(contractionSequence, temp);
+            result = randomDefaultPolicy(contractionSequence, temp, *graphCopy);
         }
         auto defaultEnd = std::chrono::high_resolution_clock::now();
         defaultPolicyTime += defaultEnd - defaultStart;

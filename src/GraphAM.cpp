@@ -16,17 +16,17 @@ GraphAM::GraphAM(uint32_t vertices) : vertices_(vertices) {
         }
     }
 
-    inline void GraphAM::set_bit(std::vector<uint64_t>& vec, uint32_t u, uint32_t v) {
-        vec[u * wordsPerRow_ + (v >> 6)] |= (1ULL << (v & 63));
-    }
+inline void GraphAM::set_bit(std::vector<uint64_t>& vec, uint32_t u, uint32_t v) {
+    vec[u * wordsPerRow_ + (v >> 6)] |= (1ULL << (v & 63));
+}
 
-    inline void GraphAM::clear_bit(std::vector<uint64_t>& vec, uint32_t u, uint32_t v) {
-        vec[u * wordsPerRow_ + (v >> 6)] &= ~(1ULL << (v & 63));
-    }
+inline void GraphAM::clear_bit(std::vector<uint64_t>& vec, uint32_t u, uint32_t v) {
+    vec[u * wordsPerRow_ + (v >> 6)] &= ~(1ULL << (v & 63));
+}
 
-    inline bool GraphAM::get_bit(const std::vector<uint64_t>& vec, uint32_t u, uint32_t v) const {
-        return vec[u * wordsPerRow_ + (v >> 6)] & (1ULL << (v & 63));
-    }
+inline bool GraphAM::get_bit(const std::vector<uint64_t>& vec, uint32_t u, uint32_t v) const {
+    return vec[u * wordsPerRow_ + (v >> 6)] & (1ULL << (v & 63));
+}
 
 void GraphAM::addEdge(int u, int v, EdgeColor color) {
     if (color == EdgeColor::Black) {
