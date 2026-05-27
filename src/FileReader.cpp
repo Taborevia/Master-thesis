@@ -21,7 +21,7 @@ std::shared_ptr<IGraph> readGraphFromFile(const std::string& filename) {
         throw std::runtime_error("Invalid header format, expected: p tww n m");
     }
 
-    std::shared_ptr<IGraph> graph = std::make_shared<GraphAL>(n);
+    std::shared_ptr<IGraph> graph = std::make_shared<GraphAM>(n);
 
     int u, v;
     for (int i = 0; i < m; i++) {

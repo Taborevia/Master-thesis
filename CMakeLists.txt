@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_compile_options(-O3)
 
+add_subdirectory(HydraPrime)
+
 add_library(twin_width_core OBJECT
     src/GraphAL.cpp
     src/GraphAM.cpp
@@ -34,3 +36,11 @@ add_executable(tests
     test/test.cpp 
 )
 target_link_libraries(tests PRIVATE twin_width_core gtest gtest_main)
+
+add_executable(twin_width_solver src/mainSolver.cpp)
+target_link_libraries(twin_width_solver PRIVATE twin_width_core)
+
+add_executable(mdadapter_test src/MDAdapterMain.cpp src/MDAdapter.cpp)
+target_include_directories(mdadapter_test PRIVATE inc HydraPrime)
+target_link_libraries(mdadapter_test PRIVATE hydraprime_core)
+target_link_libraries(mdadapter_test PRIVATE twin_width_core)

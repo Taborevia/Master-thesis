@@ -24,22 +24,22 @@ void printMemoryUsage() {
 }
 
 
-MonteCarloTreeSearch_v1::MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs, uint32_t greedySimulationPairs, uint32_t greedySimulationDepth, double PTW_coeff, int32_t dynamicTimeDistribution, int32_t numOfBestPairs) 
+MonteCarloTreeSearch_v1::MonteCarloTreeSearch_v1(std::shared_ptr<IGraph> graph, int maxPairs, uint32_t greedySimulationPairs, uint32_t greedySimulationDepth, double PTW_coeff, int32_t dynamicTimeDistribution, int32_t numOfBestPairs, unsigned int seed) 
     : graph_(graph), maxPairs_(maxPairs), vertices_(graph->getNumberOfVertices()), greedySimulationPairs_(greedySimulationPairs), greedySimulationDepth_(greedySimulationDepth), PTW_coeff_(PTW_coeff), dynamicTimeDistribution_(dynamicTimeDistribution), numOfBestPairs_(numOfBestPairs) {
     root_ = std::make_shared<Node>(std::make_pair(-1,-1),std::weak_ptr<Node>());
     bestTwinWidth_ = INT32_MAX;
+    rng_.seed(seed);
 }
 
-std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::generateRandomSequence(VerticesPositions vertices, unsigned int seed){
-    std::mt19937 rng(seed);
+std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::generateRandomSequence(VerticesPositions vertices){
     std::vector<std::pair<int,int>> sequence;
     unsigned int n = vertices.vertices.size();
     for(int i =0;i<n-1;i++){
         std::uniform_int_distribution<unsigned int> dist(0, vertices.vertices.size()-1);
-        unsigned int random_1 = dist(rng);
+        unsigned int random_1 = dist(rng_);
         unsigned int random_2;
         do {
-            random_2 = dist(rng);
+            random_2 = dist(rng_);
         } while(random_1 == random_2);
         sequence.emplace_back(vertices.vertices.at(random_1),vertices.vertices.at(random_2));
         vertices.erase(vertices.vertices.at(random_2));
@@ -62,7 +62,7 @@ std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::possibleContractions(Ve
 
     std::vector<std::pair<int,int>> result;
 
-    if (maxPairs == -1 or maxPairs >= totalPairs) {
+    if (maxPairs == 0 || maxPairs >= totalPairs) {
         result.reserve(totalPairs);
 
         for (int i = 0; i < n; ++i) {
@@ -73,17 +73,16 @@ std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::possibleContractions(Ve
     } else {
         result.reserve(maxPairs);
         
-        static std::mt19937 gen(2);
         std::uniform_int_distribution<uint32_t> dist(0, n - 1);
         // after_random = std::chrono::high_resolution_clock::now();
         std::unordered_set<uint64_t> selected;
         selected.reserve(maxPairs);
         // before_selection = std::chrono::high_resolution_clock::now();
         while (selected.size() < maxPairs) {
-            uint32_t u = dist(gen);
+            uint32_t u = dist(rng_);
             uint32_t v;
             do {
-                v = dist(gen);
+                v = dist(rng_);
             } while (u == v);
             selected.insert((static_cast<uint64_t>(u) << 32) | v);
         }
@@ -131,7 +130,8 @@ std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::possibleContractions(Ve
 std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::bestPossibleContractions(
     const IGraph& graph, 
     VerticesPositions& vertices, 
-    int32_t numberOfContractions) {
+    int32_t numberOfContractions,
+    Node& node) {
     
     int n = vertices.vertices.size();
     if (n < 2) return {};
@@ -162,68 +162,73 @@ std::vector<std::pair<int,int>> MonteCarloTreeSearch_v1::bestPossibleContraction
 
     std::vector<std::pair<int,int>> result;
     result.reserve(bestPairs.size());
-    
+    node.maxChildTW_ = bestPairs.top().first;
     while (!bestPairs.empty()) {
         result.push_back(bestPairs.top().second);
+        if (bestPairs.size()==1){
+            node.minChildTW_ = bestPairs.top().first;
+        }
         bestPairs.pop();
     }
 
     std::reverse(result.begin(), result.end());
-
     return result;
 }
 
 
 float MonteCarloTreeSearch_v1::UCT(const std::shared_ptr<Node>& state, int child, float c) const {
-    // if (state->children_.at(child)->visits_ > 1) {
-    //     std::cout << "\n\n\nvalue: " << (1-(((float)state->children_.at(child)->value_/state->maxTwinWidth_)/state->children_.at(child)->visits_)) << std::endl;
-    //     std::cout << "visits: " << state->children_.at(child)->visits_ << "parent visits: " << state->visits_ << "value: "<< state->children_.at(child)->value_ << "MaxTW: " << state->maxTwinWidth_ << std::endl;
-    // }
-    float value = (1-(((float)state->children_.at(child)->value_/state->maxTwinWidth_)/state->children_.at(child)->visits_))+(c*sqrt(log(state->visits_)/state->children_.at(child)->visits_));
-    if (state->maxTwinWidth_ == 0){
-        return 0;
+    double raw_mean = (double)state->children_.at(child)->value_ / state->children_.at(child)->visits_;
+    double value_1 = 0;
+    if (state->maxTwinWidth_ != 0) {
+        value_1 = 1 - (raw_mean / state->maxTwinWidth_);
+    }else {
+        value_1 = 1;
     }
-    return value;
+    double value_2 = c*sqrt(log(state->visits_)/state->children_.at(child)->visits_);
+    return value_1+value_2;
 }
 
 float MonteCarloTreeSearch_v1::SPUCT_PTW(const std::shared_ptr<Node>& state, int child, float c, float D) const {
-    
-    double mean = (1-(((double)state->children_.at(child)->value_/state->maxTwinWidth_)/state->children_.at(child)->visits_));
+
+    double raw_mean = (double)state->children_.at(child)->value_ / state->children_.at(child)->visits_;
+    double value_1 = 0;
+    if (state->maxTwinWidth_ != 0){
+        value_1 = 1 - (raw_mean / state->maxTwinWidth_);
+    }else{
+        value_1 = 1;
+    }
     double value_2 = (c*sqrt(log(state->visits_)/state->children_.at(child)->visits_));
-    double value_3 = sqrt(((state->children_.at(child)->squaredValue_) - (state->children_.at(child)->visits_ * (mean*mean)) + D)/state->children_.at(child)->visits_);
-    value_3 = value_3 / (state->maxTwinWidth_ * state->maxTwinWidth_);
+
+    double value_3 = 0;
+    if (state->maxTwinWidth_ != 0){
+        value_3 = sqrt((std::max(0.0,(state->children_.at(child)->squaredValue_) - (state->children_.at(child)->visits_ * (raw_mean*raw_mean))) + D)/state->children_.at(child)->visits_);
+        value_3 = value_3 / state->maxTwinWidth_;
+    }
     double value_4 = 0;
-    if (state->maxTwinWidth_ > state->minTwinWidth_){
-        value_4 = (state->maxTwinWidth_ - state->children_.at(child)->currentTwinWidth) / (state->maxTwinWidth_ - state->minTwinWidth_);
+    if (state->maxChildTW_ > state->minChildTW_ && state->maxChildTW_ != -1){
+        value_4 = (state->maxChildTW_ - state->children_.at(child)->currentTwinWidth) / (state->maxChildTW_ - state->minChildTW_);
     } else {
         value_4 = 1;
     }
-    // if (state->children_.at(child)->visits_ > 20) {
-    //     std::cout << "\nchildren value: " << state->children_.at(child)->value_ << " visits: " << state->children_.at(child)->visits_ << " maxTwinWidth: " << state->maxTwinWidth_ << std::endl;
-    //     std::cout << "SPUCT value: " << mean << " + " << value_2 << " + " << value_3 << std::endl;
-    // }
-    if (state->maxTwinWidth_ == 0){
-        return value_2;
-    }
-    
-    return mean + value_2 + value_3 + PTW_coeff_*value_4;
+    return value_1 + value_2 + value_3 + PTW_coeff_*value_4;
 }
 
 float MonteCarloTreeSearch_v1::SPUCT(const std::shared_ptr<Node>& state, int child, float c, float D) const {
-    
-    double mean = (1-(((double)state->children_.at(child)->value_/state->maxTwinWidth_)/state->children_.at(child)->visits_));
+    double raw_mean = (double)state->children_.at(child)->value_ / state->children_.at(child)->visits_;
+    double value_1 = 0;
+    if (state->maxTwinWidth_ != 0){
+        value_1 = 1 - (raw_mean / state->maxTwinWidth_);
+    }else{
+        value_1 = 1;
+    }
     double value_2 = (c*sqrt(log(state->visits_)/state->children_.at(child)->visits_));
-    double value_3 = sqrt(((state->children_.at(child)->squaredValue_) - (state->children_.at(child)->visits_ * (mean*mean)) + D)/state->children_.at(child)->visits_);
-    value_3 = value_3 / (state->maxTwinWidth_ * state->maxTwinWidth_);
-    // if (state->children_.at(child)->visits_ > 20) {
-    //     std::cout << "\nchildren value: " << state->children_.at(child)->value_ << " visits: " << state->children_.at(child)->visits_ << " maxTwinWidth: " << state->maxTwinWidth_ << std::endl;
-    //     std::cout << "SPUCT value: " << mean << " + " << value_2 << " + " << value_3 << std::endl;
-    // }
-    if (state->maxTwinWidth_ == 0){
-        return value_2;
+    double value_3 = 0;
+    if (state->maxTwinWidth_ != 0) {
+        value_3 = sqrt((std::max(0.0,(state->children_.at(child)->squaredValue_) - (state->children_.at(child)->visits_ * (raw_mean*raw_mean))) + D)/state->children_.at(child)->visits_);
+        value_3 = value_3 / state->maxTwinWidth_;
     }
     
-    return mean + value_2 + value_3;
+    return value_1 + value_2 + value_3;
 }
 
 std::shared_ptr<Node> MonteCarloTreeSearch_v1::bestChild(const std::shared_ptr<Node>& state, float c, float D) {
@@ -256,8 +261,9 @@ std::shared_ptr<Node> MonteCarloTreeSearch_v1::expand(const std::shared_ptr<Node
     state->possibleContractions_.pop_back();
     vertices.erase(new_contraction.second);
     auto new_state = std::make_shared<Node>(new_contraction,state);
+    graph.contractVertices(new_contraction.first, new_contraction.second);
     if (numOfBestPairs_ > 0){
-        new_state->possibleContractions_ = bestPossibleContractions(graph, vertices, numOfBestPairs_);
+        new_state->possibleContractions_ = bestPossibleContractions(graph, vertices, numOfBestPairs_, *new_state);
     } else {
         new_state->possibleContractions_ = possibleContractions(vertices, maxPairs_);
     }
@@ -274,7 +280,7 @@ std::shared_ptr<Node> MonteCarloTreeSearch_v1::treePolicy(const std::shared_ptr<
     if (state->possibleContractions_.size()!=0){
         auto result = expand(state,vertices, graph);
         contractionSequence.push_back(result->contraction_);
-        graph.contractVertices(result->contraction_.first, result->contraction_.second);
+        result->currentTwinWidth = graph.getMaxRedDegree();
         return result;
     }else{
         auto child = bestChild(state,c,D);
@@ -287,7 +293,7 @@ std::shared_ptr<Node> MonteCarloTreeSearch_v1::treePolicy(const std::shared_ptr<
 
 uint32_t MonteCarloTreeSearch_v1::randomDefaultPolicy(std::vector<std::pair<int,int>> contractionSequence, VerticesPositions vertices, IGraph& graph){
     uint32_t result = 0;
-    auto randomContractionSequence = generateRandomSequence(vertices, std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    auto randomContractionSequence = generateRandomSequence(vertices);
     contractionSequence.insert(contractionSequence.end(),randomContractionSequence.begin(),randomContractionSequence.end());
     result = graph.contractGraph(randomContractionSequence);
     if (bestTwinWidth_>result){
@@ -367,16 +373,18 @@ void MonteCarloTreeSearch_v1::backPropagation(const std::shared_ptr<Node>& state
 std::shared_ptr<Node> MonteCarloTreeSearch_v1::bestContraction(){
     auto current = root_;
     int32_t mostVisitedChild = 0;
+    double bestValue = 0.0;
     std::shared_ptr<Node> bestChild = nullptr;
     
     // std::cout << "\n=== Stan wszystkich dzieci ===" << std::endl;
     for (auto& child : current->children_){
-        // float avgValue = (child->visits_ > 0) ? (float)child->value_ / child->visits_ : 0.0f;
+        float avgValue = (child->visits_ > 0) ? (float)child->value_ / child->visits_ : 0.0f;
         // std::cout << "Kontrakcja: (" << child->contraction_.first << ", " 
         //           << child->contraction_.second << ") | "
         //           << "Wizyty: " << child->visits_ << " | "
         //           << "Wartosc: " << child->value_ << " | "
-        //           << "Średnia: " << avgValue << std::endl;
+        //           << "Średnia: " << avgValue << std::endl
+        //           << "currentTwinWidth: " << child->currentTwinWidth << std::endl;
         if (child->visits_ > mostVisitedChild){
             mostVisitedChild = child->visits_;
             bestChild = child;
@@ -395,7 +403,11 @@ void MonteCarloTreeSearch_v1::makeContraction(float resources, float c_parameter
     std::chrono::duration<double> duration{};
     // std::cout << "Starting contraction with " << n << " vertices. Time limit: " << resources << " seconds\n";
     auto buildStart = std::chrono::high_resolution_clock::now();
-    root_->possibleContractions_ = possibleContractions(vertices_, maxPairs_);
+    if (numOfBestPairs_ > 0 && root_->children_.empty()) {
+        root_->possibleContractions_ = bestPossibleContractions(*graph_, vertices_, numOfBestPairs_, *root_);
+    } else { 
+        root_->possibleContractions_ = possibleContractions(vertices_, maxPairs_);
+    }
     auto buildEnd = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> buildTime = buildEnd - buildStart;
 
@@ -404,6 +416,7 @@ void MonteCarloTreeSearch_v1::makeContraction(float resources, float c_parameter
     std::chrono::duration<double> backPropagationTime{};
 
     while(duration.count() < resources){
+        // std::cout << "root children: " << root_->children_.size() << " possible contractions: " << root_->possibleContractions_.size() << "\n";
         auto graphCopy = graph_->clone();
         simulationCounter++;
         auto temp = vertices_;
