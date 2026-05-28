@@ -8,7 +8,7 @@
 int main() {
     // Utwórz factory function dla solvera
     auto solverFactory0 = [](std::shared_ptr<IGraph> graph) {
-        return std::make_shared<MonteCarloTreeSearch_v1>(graph, 100, 10, 10, 10.0, 0, 100);
+        return std::make_shared<MonteCarloTreeSearch_v1>(graph, 100, 10, 10, 10.0, 0, 0);
     };
     auto solverFactory1 = [](std::shared_ptr<IGraph> graph) {
         return std::make_shared<MonteCarloTreeSearch_v1>(graph, 100, 10, 10, 10.0, 1);

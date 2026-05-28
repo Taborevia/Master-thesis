@@ -108,7 +108,8 @@ int main(int argc, char* argv[]) {
     // 4. Uruchomienie algorytmu
 
     std::streambuf* old_cout_buffer = std::cout.rdbuf();
-    std::cout.rdbuf(nullptr);
+    std::cout.rdbuf(std::cerr.rdbuf()); 
+    // std::cout.rdbuf(nullptr); // Przekierowanie cout do null (wyciszenie) - przydatne, gdy algorytm sam wypisuje dużo informacji diagnostycznych, a my chcemy tylko wynik końcowy.; 
     
     int result_twin_width = solve_twin_width(
         filename, param_C, param_D, resources, dynamic_time_dist, 

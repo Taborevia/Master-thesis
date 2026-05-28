@@ -185,7 +185,19 @@ float MonteCarloTreeSearch_v1::UCT(const std::shared_ptr<Node>& state, int child
         value_1 = 1;
     }
     double value_2 = c*sqrt(log(state->visits_)/state->children_.at(child)->visits_);
-    return value_1+value_2;
+    // print results if c is 1.501 for debugging purposes
+    if (std::fabs(c - 1.501f) < 1e-6f) {
+        // Log useful diagnostics for the chosen child
+        std::cout << "[UCT debug] child=" << child
+                  << " raw_mean=" << raw_mean
+                  << " value1=" << value_1
+                  << " value2=" << value_2
+                  << " uct=" << (value_1 + value_2)
+                  << " visits=" << state->children_.at(child)->visits_
+                  << std::endl;
+    }
+
+    return value_1 + value_2;
 }
 
 float MonteCarloTreeSearch_v1::SPUCT_PTW(const std::shared_ptr<Node>& state, int child, float c, float D) const {
@@ -376,23 +388,24 @@ std::shared_ptr<Node> MonteCarloTreeSearch_v1::bestContraction(){
     double bestValue = 0.0;
     std::shared_ptr<Node> bestChild = nullptr;
     
-    // std::cout << "\n=== Stan wszystkich dzieci ===" << std::endl;
+    std::cout << "\n=== Stan wszystkich dzieci ===" << std::endl;
     for (auto& child : current->children_){
         float avgValue = (child->visits_ > 0) ? (float)child->value_ / child->visits_ : 0.0f;
-        // std::cout << "Kontrakcja: (" << child->contraction_.first << ", " 
-        //           << child->contraction_.second << ") | "
-        //           << "Wizyty: " << child->visits_ << " | "
-        //           << "Wartosc: " << child->value_ << " | "
-        //           << "Średnia: " << avgValue << std::endl
-        //           << "currentTwinWidth: " << child->currentTwinWidth << std::endl;
+        std::cout << "Kontrakcja: (" << child->contraction_.first << ", " 
+                  << child->contraction_.second << ") | "
+                  << "Wizyty: " << child->visits_ << " | "
+                  << "Wartosc: " << child->value_ << " | "
+                  << "Średnia: " << avgValue << std::endl
+                  << "currentTwinWidth: " << child->currentTwinWidth << std::endl
+                  << "UCT:" << UCT(current, &child - &current->children_[0], 1.501) << std::endl;
         if (child->visits_ > mostVisitedChild){
             mostVisitedChild = child->visits_;
             bestChild = child;
         }
     }
-    // std::cout << "Wybrana kontrakcja: (" << bestChild->contraction_.first << ", " 
-    //           << bestChild->contraction_.second << ") z " << bestChild->visits_ << " wizytami\n";
-    // std::cout << "============================\n" << std::endl;
+    std::cout << "Wybrana kontrakcja: (" << bestChild->contraction_.first << ", " 
+              << bestChild->contraction_.second << ") z " << bestChild->visits_ << " wizytami\n";
+    std::cout << "============================\n" << std::endl;
     
     return bestChild;
 }
