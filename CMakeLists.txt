@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project(TwinWidth)
 add_compile_options(-fdiagnostics-color=always)
 
