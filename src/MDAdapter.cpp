@@ -2,8 +2,10 @@
 
 #include "MDAdapter.hpp"
 #include "GraphAL.hpp"
-#include "MonteCarloTreeSearch_v1.hpp"
+#include "GraphAM.hpp"
+#include "MonteCarloTreeSearch.hpp"
 #include "FileReader.hpp"
+#include <functional>
 
 #include <chrono>
 #include <iostream>
@@ -12,9 +14,22 @@
 #include <utility>
 
 MDAdapter::MDAdapter(std::string filename) {
-    filename_ = filename;
-    graph_ = readwrite::load_pace_2023(filename.c_str());
-    mdTree_ = modular::MDTree(graph_, false);
+  // default factory: create a MonteCarloTreeSearch solver with previous default params
+  auto defaultFactory = [](std::shared_ptr<IGraph> g) -> std::unique_ptr<ITwinWidthSolver> {
+    unsigned int seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    return std::make_unique<MonteCarloTreeSearch>(g, 0, 10, 10, 0.5, 1, 10, seed);
+  };
+  filename_ = filename;
+  graph_ = readwrite::load_pace_2023(filename.c_str());
+  mdTree_ = modular::MDTree(graph_, false);
+  primeSolverFactory_ = defaultFactory;
+}
+
+MDAdapter::MDAdapter(std::string filename, std::function<std::unique_ptr<ITwinWidthSolver>(std::shared_ptr<IGraph>)> primeSolverFactory) {
+  filename_ = filename;
+  graph_ = readwrite::load_pace_2023(filename.c_str());
+  mdTree_ = modular::MDTree(graph_, false);
+  primeSolverFactory_ = std::move(primeSolverFactory);
 }
 
 modular::MDTree MDAdapter::getMDTree(){
@@ -52,7 +67,7 @@ std::shared_ptr<IGraph> MDAdapter::induceAndRelabelGraph(std::vector<int> const&
         label_map.insert({vertices[i], i});
     }
 
-    auto inducedGraph = std::make_shared<GraphAL>(inducedGraphSize);
+    auto inducedGraph = std::make_shared<GraphAM>(inducedGraphSize);
 
     for (int i = 0; i < graphSize; ++i) {
         if (!activeVertices[i]) continue;
@@ -115,9 +130,6 @@ void MDAdapter::findSequence(float resources, float c_parameter, float D_paramet
 
     auto end_time = std::chrono::steady_clock::now();
     auto decomposition_duration = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count();
-    std::cout << "Modular decomposition + prime graph extraction time: " << decomposition_duration << " s\n";
-    std::cout << "Number of prime graphs: " << num_prime_graphs << "\n";
-    std::cout << "Total prime vertices: " << sum_prime_graphs_size << "\n";
     auto left_time = resources - decomposition_duration;
 
     std::vector<std::shared_ptr<IGraph>> prime_graphs;
@@ -132,7 +144,10 @@ void MDAdapter::findSequence(float resources, float c_parameter, float D_paramet
       //process prime graph H with primeSolver
 
       float time_for_this_graph = left_time * (static_cast<float>(prime_stats[graph_id].first) / static_cast<float>(sum_prime_graphs_size));
-      auto solver = std::make_unique<MonteCarloTreeSearch_v1>(H, 100, 10, 10, 10.0, 0, 100);
+
+      std::unique_ptr<ITwinWidthSolver> solver;
+      solver = primeSolverFactory_(H);
+
       solver->findSequence(time_for_this_graph, c_parameter, D_parameter);
       int tw = solver->getBestTwinWidth();
       auto sequence = solver->getBestContractionSequence();

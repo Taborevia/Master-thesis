@@ -1,6 +1,5 @@
 #include "GraphAM.hpp"
 #include <iostream>
-#include <iomanip>
 #include <memory>
 #include <bit>
 
@@ -111,7 +110,7 @@ int GraphAM::estimateTwinWidthAfterContraction(int u, int v) const {
                 maxRedDegree = estimated_w_deg;
             }
             
-            increase_mask &= (increase_mask - 1); // Gaszenie najniższej jedynki
+            increase_mask &= (increase_mask - 1);
         }
     }
     

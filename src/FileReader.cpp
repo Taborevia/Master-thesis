@@ -5,7 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 
-std::shared_ptr<IGraph> readGraphFromFile(const std::string& filename) {
+std::shared_ptr<IGraph> readGraphFromFile(const std::string& filename, bool useAdjacencyMatrix) {
     std::ifstream in(filename);
     if (!in.is_open()) {
         throw std::runtime_error("Cannot open file: " + filename);
@@ -21,7 +21,12 @@ std::shared_ptr<IGraph> readGraphFromFile(const std::string& filename) {
         throw std::runtime_error("Invalid header format, expected: p tww n m");
     }
 
-    std::shared_ptr<IGraph> graph = std::make_shared<GraphAM>(n);
+    std::shared_ptr<IGraph> graph;
+    if (useAdjacencyMatrix){
+        graph = std::make_shared<GraphAM>(n);
+    }else{
+        graph = std::make_shared<GraphAL>(n);
+    }
 
     int u, v;
     for (int i = 0; i < m; i++) {

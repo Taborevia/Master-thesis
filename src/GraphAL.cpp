@@ -1,8 +1,6 @@
 #include "GraphAL.hpp"
 #include <iostream>
 #include <algorithm>
-#include <fstream>
-#include <map>
 
 GraphAL::GraphAL(int vertices)
     : vertices_(vertices), maxRedDegree_(0), redDegrees_(vertices,0)
@@ -98,6 +96,7 @@ void GraphAL::print() const {
 
 void GraphAL::contractVertices(int u, int v) {
     std::vector<std::pair<int, int>> mergedEdges;
+    mergedEdges.reserve(adjList_[u].size() + adjList_[v].size());
 
     auto itU = adjList_[u].begin();
     auto itV = adjList_[v].begin();
@@ -187,7 +186,7 @@ void GraphAL::contractVertices(int u, int v) {
         }
         ++itV;
     }
-    // Usuń stare krawędzie i przypisz nową listę sąsiedztwa do wierzchołka u
+
     adjList_[u] = std::move(mergedEdges);
     redDegrees_[u] = newVertexRedDegree;
     if (newVertexRedDegree>maxRedDegree_){
@@ -270,7 +269,7 @@ int GraphAL::estimateTwinWidthAfterContraction(int u, int v) const {
         }
         ++itV;
     }
-    // Usuń stare krawędzie i przypisz nową listę sąsiedztwa do wierzchołka u
+
     if (newVertexRedDegree>newMaxRedDegree){
         newMaxRedDegree = newVertexRedDegree;
     }
@@ -283,16 +282,7 @@ int GraphAL::getMaxRedDegree() const{
 
 int GraphAL::contractGraph(std::vector<std::pair<int,int>> contractionSequnce){
     for (const auto& contraction : contractionSequnce){
-        // print();
-        // std::cout<<"Contract: "<<contraction.first<<" z "<<contraction.second;
         contractVertices(contraction.first, contraction.second);
-        // std::cout<<"Max red degree: "<<maxRedDegree_<<"\n";
-        // for (const auto& deg : redDegrees_){
-            // std::cout<<deg<<" ";
-        // }
-        // std::cout<<"\n";
     }
-    // std::cout<<"\n";
-    // std::cout<<maxRedDegree_;
     return maxRedDegree_; 
 }
